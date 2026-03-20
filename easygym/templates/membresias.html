@@ -1,0 +1,187 @@
+{% extends "home.html" %}
+
+{% block title %}EasyGym - Membresías{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ... Tus estilos actuales se mantienen igual ... */
+    .table { border-color: var(--border) !important; color: var(--fg) !important; }
+    .table thead th { background-color: var(--surface2) !important; color: var(--fg) !important; border-bottom: 2px solid var(--border) !important; }
+    .table tbody tr { background-color: var(--surface) !important; transition: all 0.2s ease; border-bottom: 1px solid var(--border); }
+    .table tbody tr:hover { background-color: #323444 !important; color: var(--fg) !important; }
+
+    .search-container { position: relative; width: 100%; max-width: 350px; }
+    .search-input { background: var(--surface2) !important; border: 1px solid var(--border) !important; color: var(--fg) !important; padding: 10px 15px 10px 15px !important; border-radius: 10px !important; }
+
+    .btn-action { background: none; border: 1px solid var(--border); color: var(--fg-dim); padding: 5px 10px; border-radius: 6px; transition: all 0.2s; }
+    .btn-action:hover { background: var(--surface2); color: var(--fg); border-color: var(--fg-dim); }
+    .btn-delete:hover { background: rgba(255, 85, 85, 0.1); color: var(--red); border-color: var(--red); }
+    .custom-input { background: var(--surface2) !important; border: 1px solid var(--border) !important; color: var(--fg) !important; border-radius: 8px !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <h4 class="mb-1 text-white">Membresías</h4>
+        <p class="mb-3" style="color:var(--fg-dim); font-size: 0.9rem;">Configura los precios y duraciones de tus servicios.</p>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="form-control search-input" placeholder="🔎 Buscar por nombre de plan...">
+        </div>
+    </div>
+    <button type="button"
+            class="btn btn-primary px-4 shadow-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#modalNuevaMembresia">
+        <i class="fas fa-plus me-2"></i>Nueva Membresia
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0" id="membresiasTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Nombre del Plan</th>
+                        <th>Precio</th>
+                        <th>Duración</th>
+                        <th>Descripción</th>
+                        <th class="text-end pe-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in membresias %}
+                    <tr>
+                        <td class="ps-4 fw-bold text-white">{{ m.nombre }}</td>
+                        <td style="color: var(--green); font-family: monospace;">$ {{ m.precio }}</td>
+                        <td><i class="far fa-clock me-2"></i>{{ m.duracion_dias }} días</td>
+                        <td class="small text-muted">{{ m.descripcion|default:"-"|truncatechars:40 }}</td>
+                        <td class="text-end pe-4">
+                            <button class="btn-action me-2"
+                                    onclick="abrirModalEditar('{{ m.id }}', '{{ m.nombre }}', '{{ m.precio }}', '{{ m.duracion_dias }}', '{{ m.descripcion }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-action btn-delete" title="Eliminar"
+                                    onclick="confirmarEliminar('{% url 'desactivar_membresia' m.id %}', '{{ m.nombre }}')">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr id="noData">
+                        <td colspan="5" class="text-center py-5" style="color: var(--fg-dim);">
+                            <i class="fas fa-id-card fa-3x mb-3 d-block"></i>
+                            <p>No hay planes configurados.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNuevaMembresia" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--surface); border: 1px solid var(--border); border-radius: 15px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                <h5 class="modal-title text-white">Crear Nuevo Plan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label small" style="color: var(--fg-dim);">{{ field.label }}</label>
+                        {{ field }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border);">
+                    <button type="submit" class="btn btn-primary px-4">Guardar Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditarMembresia" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--surface); border: 1px solid var(--border); border-radius: 15px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                <h5 class="modal-title text-white">Editar Plan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="membresia_id_editar" id="id_membresia_editar">
+
+                <div class="modal-body">
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label small" style="color: var(--fg-dim);">{{ field.label }}</label>
+                        {{ field }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border);">
+                    <button type="submit" class="btn btn-primary px-4 text-white">Actualizar Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // 1. Buscador dinámico
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const value = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#membresiasTable tbody tr:not(#noData)');
+        rows.forEach(row => {
+            const nombre = row.cells[0].textContent.toLowerCase();
+            row.style.display = nombre.includes(value) ? "" : "none";
+        });
+    });
+
+    function abrirModalEditar(id, nombre, precio, duracion, descripcion) {
+        // 1. Inyectamos el ID en el input oculto del modal de edición
+        document.getElementById('id_membresia_editar').value = id;
+
+        // 2. Llenamos los campos (buscando dentro del modal específico)
+        const modal = document.getElementById('modalEditarMembresia');
+        modal.querySelector('[name="nombre"]').value = nombre;
+        modal.querySelector('[name="precio"]').value = precio.replace(',', '.');
+        modal.querySelector('[name="duracion_dias"]').value = duracion;
+        modal.querySelector('[name="descripcion"]').value = (descripcion === 'None' || descripcion === 'undefined') ? '' : descripcion;
+
+        // 3. Mostramos el modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    }
+
+    // 4. Confirmación de Eliminación con SweetAlert2
+    function confirmarEliminar(url, nombre) {
+        Swal.fire({
+            title: '¿Eliminar plan?',
+            text: `El plan "${nombre}" dejará de estar disponible para nuevas suscripciones.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ff5555',
+            cancelButtonColor: '#44475a',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            background: '#1e1e2e',
+            color: '#f8f8f2'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    }
+</script>
+{% endblock %}

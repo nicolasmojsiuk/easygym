@@ -1,0 +1,335 @@
+{% extends "home.html" %}
+
+{% block title %}EasyGym - Gestión de Socios{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table {
+        border-color: var(--border) !important;
+        color: var(--fg) !important;
+    }
+
+
+    .table thead th {
+        background-color: var(--surface2) !important;
+        color: var(--fg) !important;
+        border-bottom: 2px solid var(--border) !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+
+    .table tbody tr {
+        background-color: var(--surface) !important;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .table tbody tr:hover {
+        background-color: #323444 !important; /* Un gris ligeramente más claro que el fondo para resaltar */
+        color: var(--fg) !important;
+    }
+
+    /* --- BUSCADOR CON LUPA INTERNA --- */
+    .search-container {
+        position: relative;
+        width: 100%;
+        max-width: 350px;
+    }
+
+    .search-container i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--fg-dim);
+        pointer-events: none;
+        font-size: 0.9rem;
+    }
+
+    .search-input {
+        background: var(--surface2) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--fg) !important;
+        padding: 10px 15px 10px 40px !important; /* Espacio para la lupa */
+        border-radius: 10px !important;
+        font-size: 0.9rem;
+    }
+
+    .search-input:focus {
+        border-color: var(--purple) !important;
+        background: var(--bg) !important;
+        box-shadow: 0 0 15px rgba(189, 147, 249, 0.1) !important;
+        outline: none;
+    }
+
+    /* --- BADGES Y BOTONES --- */
+    .badge-custom {
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+    }
+
+    .badge-active {
+        background: rgba(80, 250, 123, 0.1);
+        color: var(--green);
+        border-color: var(--green);
+    }
+
+    .badge-inactive {
+        background: rgba(255, 85, 85, 0.1);
+        color: var(--red);
+        border-color: var(--red);
+    }
+
+    .btn-action {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--fg-dim);
+        padding: 5px 10px;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+        background: var(--surface2);
+        color: var(--fg);
+        border-color: var(--fg-dim);
+    }
+
+    .btn-delete:hover {
+        background: rgba(255, 85, 85, 0.1);
+        color: var(--red);
+        border-color: var(--red);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <h4 class="mb-1 text-white">Socios</h4>
+        <p class="mb-3" style="color:var(--fg-dim); font-size: 0.9rem;">Administración de miembros del gimnasio.</p>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" class="form-control search-input" placeholder="🔎 Buscar por nombre o DNI...">
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoSocio">
+        <i class="fas fa-plus me-2"></i>Nuevo Socio
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0" id="sociosTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4">ID</th>
+                        <th>Nombre</th>
+                        <th>DNI</th>
+                        <th>Email</th>
+                        <th>WhatsApp</th>
+                        <th>Estado</th>
+                        <th class="text-end pe-4">Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for socio in socios %}
+                    <tr>
+                        <td class="ps-4" style="color: var(--purple); font-family: monospace;">#{{ socio.numero_socio }}</td>
+                        <td class="fw-bold">{{ socio.nombre }}</td>
+                        <td>{{ socio.dni }}</td>
+                        <td>{{ socio.email }}</td>
+                        <td>{{ socio.whatsapp|default:"-" }}</td>
+                        <td>
+                            {% if socio.activo %}
+                                <span class="badge-custom badge-active">ACTIVO</span>
+                            {% else %}
+                                <span class="badge-custom badge-inactive">INACTIVO</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group">
+                                <button class="btn-action me-2" title="Editar"
+                                        onclick="abrirModalEditar('{{ socio.numero_socio }}', '{{ socio.nombre }}', '{{ socio.dni }}', '{{ socio.email }}', '{{ socio.whatsapp }}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+
+                                <button type="button"
+                                    class="btn-action btn-delete"
+                                    onclick="confirmarEliminar('{% url 'desactivar_socio' socio.numero_socio %}', '{{ socio.nombre }}')">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr id="noDataRow">
+                        <td colspan="7" class="text-center py-5" style="color: var(--fg-dim);">
+                            <i class="fas fa-user-slash fa-3x mb-3 d-block"></i>
+                            <p>No se encontraron socios registrados.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalNuevoSocio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--surface); border: 1px solid var(--border); border-radius: 15px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                <h5 class="modal-title text-white">Registrar Nuevo Socio</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label small" style="color: var(--fg-dim);">{{ field.label }}</label>
+                            {{ field }}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border);">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal" style="border-color: var(--border);">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Guardar Socio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditarSocio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--surface); border: 1px solid var(--border);">
+            <div class="modal-header">
+                <h5 class="modal-title text-white">Editar Socio</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="socio_id" id="edit_socio_id">
+                <div class="modal-body">
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label small">{{ field.label }}</label>
+                            {{ field }}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Actualizar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<style>
+    /* Estilos para que los inputs del form coincidan con tu tema */
+    .custom-input {
+        background: var(--surface2) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--fg) !important;
+        border-radius: 8px !important;
+    }
+    .custom-input:focus {
+        border-color: var(--purple) !important;
+        box-shadow: 0 0 10px rgba(189, 147, 249, 0.1) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Función para permitir SOLO números
+        const soloNumeros = (selector) => {
+            const input = document.querySelector(selector);
+            if (!input) return;
+
+            input.addEventListener('keypress', function(e) {
+                // Si no es un número (0-9), bloquea la tecla
+                if (e.which < 48 || e.which > 57) {
+                    e.preventDefault();
+                }
+            });
+
+            // Por si intentan pegar texto con puntos o letras
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+        };
+
+        // Aplicamos a DNI y WSP (basado en el atributo 'name' del form de Django)
+        soloNumeros('input[name="dni"]');
+        soloNumeros('input[name="whatsapp"]');
+    });
+
+
+    // Lógica del Buscador Dinámico
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const value = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#sociosTable tbody tr:not(#noDataRow)');
+        let hasResults = false;
+
+        rows.forEach(row => {
+            const nombre = row.cells[1].textContent.toLowerCase();
+            const dni = row.cells[2].textContent.toLowerCase();
+
+            if (nombre.includes(value) || dni.includes(value)) {
+                row.style.display = "";
+                hasResults = true;
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        // Mostrar/Ocultar mensaje de "No hay resultados" si existe la fila
+        const noDataRow = document.getElementById('noDataRow');
+        if(noDataRow) {
+            noDataRow.style.display = hasResults ? "none" : "";
+        }
+    });
+    function confirmarEliminar(url, nombre) {
+        Swal.fire({
+            title: '¿Eliminar socio?',
+            text: `Estás a punto de desactivar a ${nombre}. No aparecerá más en la lista.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ff5555',
+            cancelButtonColor: '#44475a',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            background: '#1e1e2e',
+            color: '#f8f8f2'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        })
+    }
+    function abrirModalEditar(id, nombre, dni, email, whatsapp) {
+        document.getElementById('edit_socio_id').value = id;
+        // Buscamos los inputs por su nombre (Django los nombra igual que el modelo)
+        document.querySelector('#modalEditarSocio [name="nombre"]').value = nombre;
+        document.querySelector('#modalEditarSocio [name="dni"]').value = dni;
+        document.querySelector('#modalEditarSocio [name="email"]').value = email;
+        document.querySelector('#modalEditarSocio [name="whatsapp"]').value = whatsapp;
+
+        var modal = new bootstrap.Modal(document.getElementById('modalEditarSocio'));
+        modal.show();
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}

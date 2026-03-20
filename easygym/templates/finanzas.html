@@ -1,0 +1,245 @@
+{% extends "home.html" %}
+
+{% block title %}EasyGym - Finanzas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table { border-color: var(--border) !important; color: var(--fg) !important; vertical-align: middle; }
+    .table thead th {
+        background-color: var(--surface2) !important;
+        color: var(--fg-dim) !important;
+        border-bottom: 2px solid var(--border) !important;
+        font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;
+    }
+    .table tbody tr { background-color: var(--surface) !important; border-bottom: 1px solid var(--border); }
+    .table tbody tr:hover { background-color: #323444 !important; }
+    .search-input, .form-select-custom, .form-date-custom {
+        background: var(--surface2) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--fg) !important;
+        border-radius: 8px !important;
+    }
+    .search-input:focus, .form-select-custom:focus, .form-date-custom:focus {
+        border-color: var(--purple) !important;
+        box-shadow: 0 0 10px rgba(189,147,249,0.1) !important;
+    }
+    .badge-method {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--fg-dim);
+        font-weight: 500;
+        padding: 5px 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row align-items-center mb-4">
+    <div class="col-md-7">
+        <h4 class="mb-1 text-white">Panel de Finanzas</h4>
+        <p class="mb-0" style="color:var(--fg-dim); font-size:0.9rem;">Historial de ingresos y control de caja.</p>
+    </div>
+    <div class="col-md-5">
+        <div class="search-container float-md-end w-100" style="max-width: 350px;">
+            <input type="text" id="searchInput" class="form-control search-input" placeholder="🔎 Buscar por socio o referencia...">
+        </div>
+    </div>
+</div>
+
+<hr style="border-color: var(--border); margin-bottom: 2rem;">
+
+<div class="row mb-4">
+
+    <!-- Recaudación -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="background:var(--surface); border-left: 4px solid var(--green) !important;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <small class="text-uppercase fw-bold" style="color:var(--fg-dim); font-size: 0.7rem;">
+                            Recaudación Filtrada
+                        </small>
+                        <h2 class="fw-bold mb-0 text-white" style="letter-spacing: -1px;">
+                            ${{ total_recaudado }}
+                        </h2>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-wallet text-success fa-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros activos -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="background:var(--surface); border-left: 4px solid var(--purple) !important;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <small class="text-uppercase fw-bold" style="color:var(--fg-dim); font-size:0.7rem;">
+                        Filtros Activos
+                    </small>
+                    <div class="bg-primary bg-opacity-10 p-2 rounded">
+                        <i class="fas fa-filter text-primary"></i>
+                    </div>
+                </div>
+                <div style="font-size:0.85rem; color:var(--fg-dim);">
+                    {% if filtros.periodo %}
+                        <div>📅 Período:
+                            <span class="text-white">{{ filtros.periodo|title }}</span>
+                        </div>
+                    {% endif %}
+                    {% if filtros.metodo %}
+                        <div>💳 Método:
+                            <span class="text-white">
+                                {% for fp in formas_pago %}
+                                    {% if fp.id|stringformat:"s" == filtros.metodo %}
+                                        {{ fp.nombre }}
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    {% endif %}
+                    {% if filtros.desde or filtros.hasta %}
+                        <div>🗓 Rango:
+                            <span class="text-white">
+                                {{ filtros.desde|default:"---" }} a {{ filtros.hasta|default:"---" }}
+                            </span>
+                        </div>
+                    {% endif %}
+                    {% if not filtros.periodo and not filtros.metodo and not filtros.desde and not filtros.hasta %}
+                        <div class="text-muted">Sin filtros aplicados</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card border-0 mb-4 p-3" style="background:var(--surface); border: 1px solid var(--border);">
+    <form method="GET" class="row g-3 align-items-end">
+
+        <div class="col-md-2">
+            <label class="small fw-bold mb-2" style="color:var(--fg-dim);">Período</label>
+            <select id="periodoSelect" name="periodo" class="form-select form-select-sm form-select-custom">
+                <option value="">Cualquier fecha</option>
+                <option value="dia" {% if filtros.periodo == 'dia' %}selected{% endif %}>Hoy</option>
+                <option value="semana" {% if filtros.periodo == 'semana' %}selected{% endif %}>Esta Semana</option>
+                <option value="mes" {% if filtros.periodo == 'mes' %}selected{% endif %}>Este Mes</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="small fw-bold mb-2" style="color:var(--fg-dim);">Forma de Pago</label>
+            <select name="metodo" class="form-select form-select-sm form-select-custom">
+                <option value="">Todas</option>
+                {% for fp in formas_pago %}
+                    <option value="{{ fp.id }}" {% if filtros.metodo == fp.id|stringformat:"s" %}selected{% endif %}>
+                        {{ fp.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-5">
+            <label class="small fw-bold mb-2" style="color:var(--fg-dim);">Rango Personalizado</label>
+            <div class="input-group input-group-sm">
+                <input type="date" id="fechaDesde" name="desde" value="{{ filtros.desde }}" class="form-control form-date-custom">
+                <span class="input-group-text bg-transparent border-0 text-muted">a</span>
+                <input type="date" id="fechaHasta" name="hasta" value="{{ filtros.hasta }}" class="form-control form-date-custom">
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100 py-2 fw-bold">
+                    <i class="fas fa-filter me-1"></i> Filtrar
+                </button>
+                <a href="{% url 'vista_finanzas' %}" class="btn btn-outline-secondary btn-sm py-2">
+                    <i class="fas fa-sync"></i>
+                </a>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+<div class="card border-0 shadow-sm overflow-hidden" style="background:var(--surface);">
+    <div class="table-responsive">
+        <table class="table mb-0" id="finanzasTable">
+            <thead>
+                <tr>
+                    <th class="ps-4">Fecha / Hora</th>
+                    <th>Socio</th>
+                    <th>Método</th>
+                    <th>Referencia</th>
+                    <th class="text-end pe-4">Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pagos %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="text-white small">{{ p.fecha_pago|date:"d/m/Y" }}</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">{{ p.fecha_pago|date:"H:i" }} hs</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-white">{{ p.suscripcion.socio.nombre }}</div>
+                    </td>
+                    <td>
+                        <span class="badge badge-method">{{ p.forma_pago.nombre }}</span>
+                    </td>
+                    <td class="small text-muted">{{ p.referencia|default:"---" }}</td>
+                    <td class="text-end pe-4 text-success fw-bold">${{ p.monto }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <i class="fas fa-search-dollar fa-3x mb-3 d-block text-muted"></i>
+                        <p class="text-muted">No se encontraron movimientos con los filtros aplicados.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('searchInput').addEventListener('keyup', function(){
+    const value = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#finanzasTable tbody tr');
+    rows.forEach(row => {
+        const socio = row.cells[1]?.textContent.toLowerCase() || "";
+        const referencia = row.cells[3]?.textContent.toLowerCase() || "";
+        row.style.display = (socio.includes(value) || referencia.includes(value)) ? "" : "none";
+    });
+});
+
+const periodoSelect = document.getElementById('periodoSelect');
+const desdeInput = document.getElementById('fechaDesde');
+const hastaInput = document.getElementById('fechaHasta');
+
+function actualizarEstadoRango(){
+    if(periodoSelect.value !== ""){
+        desdeInput.disabled = true;
+        hastaInput.disabled = true;
+        desdeInput.style.opacity = "0.5";
+        hastaInput.style.opacity = "0.5";
+    } else {
+        desdeInput.disabled = false;
+        hastaInput.disabled = false;
+        desdeInput.style.opacity = "1";
+        hastaInput.style.opacity = "1";
+    }
+}
+
+periodoSelect.addEventListener("change", actualizarEstadoRango);
+document.addEventListener("DOMContentLoaded", actualizarEstadoRango);
+</script>
+{% endblock %}

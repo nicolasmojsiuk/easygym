@@ -1,0 +1,149 @@
+{% extends "home.html" %}
+
+{% block title %}EasyGym - Ajustes{% endblock %}
+
+{% block extra_css %}
+<style>
+
+.settings-card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.settings-label{
+    font-size:0.8rem;
+    font-weight:600;
+    color:var(--fg-dim);
+    text-transform:uppercase;
+    margin-bottom:6px;
+}
+
+.settings-input{
+    background: var(--surface2);
+    border:1px solid var(--border);
+    color:var(--fg);
+}
+
+.settings-input:focus{
+    border-color: var(--purple);
+    box-shadow:0 0 6px rgba(189,147,249,0.15);
+}
+
+.logo-preview{
+    width:90px;
+    height:90px;
+    border-radius:10px;
+    object-fit:cover;
+    border:1px solid var(--border);
+    background:var(--surface2);
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h4 class="text-white mb-1">Ajustes del Sistema</h4>
+        <p style="color:var(--fg-dim); font-size:0.9rem;">
+            Configura la información principal de tu gimnasio.
+        </p>
+    </div>
+</div>
+
+<div class="card settings-card p-4">
+
+<form method="POST" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="row g-4">
+
+    <!-- Logo -->
+    <div class="col-md-3 text-center">
+        <label class="settings-label d-block">Logo</label>
+
+        {% if configuracion.logo %}
+            <img src="{{ configuracion.logo.url }}" class="logo-preview mb-2">
+        {% else %}
+            <div class="logo-preview mb-2 d-flex align-items-center justify-content-center">
+                <i class="fas fa-image text-muted"></i>
+            </div>
+        {% endif %}
+
+        <input type="file" name="logo" class="form-control settings-input">
+    </div>
+
+    <!-- Datos principales -->
+    <div class="col-md-9">
+
+        <div class="row g-3">
+
+            <div class="col-md-6">
+                <label class="settings-label">Nombre del gimnasio</label>
+                <input type="text"
+                       name="nombre_gimnasio"
+                       value="{{ configuracion.nombre_gimnasio }}"
+                       class="form-control settings-input">
+            </div>
+
+            <div class="col-md-6">
+                <label class="settings-label">Teléfono</label>
+                <input type="text"
+                       name="telefono"
+                       value="{{ configuracion.telefono }}"
+                       class="form-control settings-input">
+            </div>
+
+            <div class="col-md-6">
+                <label class="settings-label">Correo electrónico</label>
+                <input type="email"
+                       name="email"
+                       value="{{ configuracion.email }}"
+                       class="form-control settings-input">
+            </div>
+
+            <div class="col-md-6">
+                <label class="settings-label">Moneda</label>
+                <select name="moneda" class="form-select settings-input">
+                    <option value="$" {% if configuracion.moneda == "$" %}selected{% endif %}>Peso ($)</option>
+                    <option value="USD" {% if configuracion.moneda == "USD" %}selected{% endif %}>Dólar (USD)</option>
+                    <option value="€" {% if configuracion.moneda == "€" %}selected{% endif %}>Euro (€)</option>
+                </select>
+            </div>
+
+            <div class="col-12">
+                <label class="settings-label">Dirección</label>
+                <input type="text"
+                       name="direccion"
+                       value="{{ configuracion.direccion }}"
+                       class="form-control settings-input">
+            </div>
+
+            <div class="col-12">
+                <label class="settings-label">Descripción o mensaje</label>
+                <textarea name="descripcion"
+                          rows="3"
+                          class="form-control settings-input">{{ configuracion.descripcion }}</textarea>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<hr style="border-color: var(--border); margin:2rem 0;">
+
+<div class="text-end">
+    <button type="submit" class="btn btn-primary px-4">
+        <i class="fas fa-save me-2"></i>Guardar Cambios
+    </button>
+</div>
+
+</form>
+
+</div>
+
+{% endblock %}

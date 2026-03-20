@@ -1,0 +1,432 @@
+{% extends "home.html" %}
+
+{% block title %}EasyGym - Suscripciones{% endblock %}
+
+{% block extra_css %}
+<style>
+.table {
+    border-color: var(--border) !important;
+    color: var(--fg) !important;
+}
+
+.table thead th {
+    background-color: var(--surface2) !important;
+    color: var(--fg) !important;
+    border-bottom: 2px solid var(--border) !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+    background-color: var(--surface) !important;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--border);
+}
+
+.table tbody tr:hover {
+    background-color: #323444 !important;
+    color: var(--fg) !important;
+}
+
+/* BUSCADOR */
+
+.search-container {
+    position: relative;
+    width: 100%;
+    max-width: 350px;
+}
+
+.search-container i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--fg-dim);
+    pointer-events: none;
+    font-size: 0.9rem;
+}
+
+.search-input {
+    background: var(--surface2) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--fg) !important;
+    padding: 10px 15px 10px 40px !important;
+    border-radius: 10px !important;
+    font-size: 0.9rem;
+}
+
+.search-input:focus {
+    border-color: var(--purple) !important;
+    background: var(--bg) !important;
+    box-shadow: 0 0 15px rgba(189,147,249,0.1) !important;
+    outline: none;
+}
+
+/* BOTONES */
+
+.btn-action {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--fg-dim);
+    padding: 5px 10px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.btn-action:hover {
+    background: var(--surface2);
+    color: var(--fg);
+    border-color: var(--fg-dim);
+}
+
+.btn-delete:hover {
+    background: rgba(255,85,85,0.1);
+    color: var(--red);
+    border-color: var(--red);
+}
+
+/* INPUTS DEL MODAL */
+
+.custom-input {
+    background: var(--surface2) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--fg) !important;
+    border-radius: 8px !important;
+}
+
+.custom-input:focus {
+    border-color: var(--purple) !important;
+    box-shadow: 0 0 10px rgba(189,147,249,0.1) !important;
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-end mb-4">
+
+    <div>
+        <h4 class="mb-1 text-white">Suscripciones</h4>
+
+        <p class="mb-3" style="color:var(--fg-dim); font-size:0.9rem;">
+            Asigna membresias a tus socios y controla los vencimientos.
+        </p>
+
+        <div class="search-container">
+            <input type="text"
+                   id="searchInput"
+                   class="form-control search-input"
+                   placeholder="🔎 Buscar por socio o membresia...">
+        </div>
+    </div>
+
+    <button type="button"
+            class="btn btn-primary px-4 shadow-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#modalNuevaSuscripcion">
+
+        <i class="fas fa-plus me-2"></i>
+        Nueva Suscripción
+
+    </button>
+
+</div>
+
+
+<div class="card border-0 shadow-sm">
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+
+            <table class="table mb-0" id="suscripcionesTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Socio</th>
+                        <th>Plan</th>
+                        <th>Monto</th> <th>Vencimiento</th>
+                        <th>Estado</th>
+                        <th>Pago</th> <th class="text-end pe-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in suscripciones %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-white">{{ s.socio.nombre }}</div>
+                            <div class="small text-muted">DNI: {{ s.socio.dni }}</div>
+                        </td>
+                        <td>{{ s.membresia.nombre }}</td>
+                        <td class="text-white">${{ s.monto }}</td> <td>{{ s.fecha_fin|date:"d/m/Y" }}</td> <td>
+                            {% if s.estado == "Vencida" %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger">Vencida</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success border border-success">Activa</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.pagado %}
+                                <span class="text-success small"><i class="fas fa-check-circle"></i> Pagado</span>
+                            {% else %}
+                                <span class="text-warning small"><i class="fas fa-clock"></i> Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex justify-content-end gap-2">
+                                {% if not s.pagado %}
+                                    <button class="btn btn-sm btn-success shadow-sm"
+                                            onclick="abrirModalPago('{{ s.id }}', '{% url 'pagar_suscripcion' s.id %}')">
+                                        <i class="fas fa-money-bill-wave"></i> Pagar
+                                    </button>
+                                {% endif %}
+
+                                <button class="btn-action btn-delete"
+                                        onclick="confirmarEliminar('{% url 'eliminar_suscripcion' s.id %}', '{{ s.socio.nombre }}')">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="modal fade"
+     id="modalNuevaSuscripcion"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content"
+             style="background:var(--surface); border:1px solid var(--border); border-radius:15px;">
+
+            <div class="modal-header"
+                 style="border-bottom:1px solid var(--border);">
+
+                <h5 class="modal-title text-white">
+                    Nueva Suscripción
+                </h5>
+
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <form method="POST">
+
+                {% csrf_token %}
+
+                <div class="modal-body">
+
+                    {% for field in form %}
+
+                    <div class="mb-3">
+
+                        <label class="form-label small"
+                               style="color:var(--fg-dim);">
+
+                            {{ field.label }}
+
+                        </label>
+
+                        {{ field }}
+
+                        {% if field.help_text %}
+
+                        <div class="form-text text-info small">
+                            {{ field.help_text }}
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                <div class="modal-footer"
+                     style="border-top:1px solid var(--border);">
+
+                    <button type="submit"
+                            class="btn btn-primary w-100 py-2">
+
+                        Confirmar
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+<div class="modal fade" id="modalProcesarPago" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background:var(--surface); border:1px solid var(--border); border-radius:15px;">
+            <div class="modal-header" style="border-bottom:1px solid var(--border);">
+                <h5 class="modal-title text-white">Registrar Pago</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formPagar" method="POST" action="">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-white-50 small mb-4">Confirma los detalles del cobro para el socio.</p>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Forma de Pago</label>
+                        <select name="forma_pago" class="form-select custom-input" required>
+                            {% for fp in formas_pago %}
+                                <option value="{{ fp.id }}">{{ fp.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Nro. de Referencia (Opcional)</label>
+                        <input type="text" name="referencia" class="form-control custom-input" placeholder="Ej: Ticket 001 o Nro Transf.">
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid var(--border);">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success px-4" onclick="document.getElementById('formPagar').target='_blank'">Confirmar Pago</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+
+function abrirModalPago(id, url) {
+    document.getElementById('formPagar').action = url;
+    var modal = new bootstrap.Modal(document.getElementById('modalProcesarPago'));
+    modal.show();
+}
+
+function confirmarEliminar(url, nombre) {
+    if (confirm(`¿Eliminar la suscripción de ${nombre}?`)) {
+        window.location.href = url;
+    }
+}
+
+$(document).ready(function() {
+
+    // 1. SELECT2
+    $('select[name="socio"]').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Escribe nombre o DNI...',
+        dropdownParent: $('#modalNuevaSuscripcion'),
+        width: '100%'
+    });
+
+    // 2. MONTO AUTOMÁTICO
+    const selectMembresia = document.querySelector('select[name="membresia"]');
+    const inputMonto = document.querySelector('input[name="monto"]');
+
+    const precios = {
+        {% for m in membresias_lista %}
+            "{{ m.id }}": "{{ m.precio }}",
+        {% endfor %}
+    };
+
+    if (selectMembresia && inputMonto) {
+        selectMembresia.addEventListener('change', function() {
+            const idSeleccionado = this.value;
+            let precio = precios[idSeleccionado] || "0";
+            inputMonto.value = precio.replace(',', '.');
+        });
+    }
+
+    // 3. BUSCADOR DE TABLA
+    $("#searchInput").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#suscripcionesTable tbody tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+    });
+
+    // 4. PREVENCIÓN PUNTOS EN MONTO
+    if (inputMonto) {
+        inputMonto.addEventListener('keypress', function(e) {
+            if (e.which === 46) { e.preventDefault(); }
+        });
+    }
+
+    // 5. SUBMIT DEL FORM DE PAGO VIA FETCH
+    document.getElementById('formPagar').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const btnConfirmar = this.querySelector('button[type="submit"]');
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+
+        // Abrir ventana ANTES del fetch (contexto del usuario)
+        const ventanaPDF = window.open('', '_blank');
+
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                // Cargar el PDF en la ventana ya abierta
+                ventanaPDF.location.href = `/socios/comprobante/${data.pago_id}/`;
+
+                bootstrap.Modal.getInstance(document.getElementById('modalProcesarPago')).hide();
+
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div id="toastPago" class="toast align-items-center text-white bg-success border-0 position-fixed bottom-0 end-0 m-4" role="alert" style="z-index:9999;">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <i class="fas fa-check-circle me-2"></i> Pago registrado correctamente.
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>`;
+                document.body.appendChild(div);
+                new bootstrap.Toast(document.getElementById('toastPago'), { delay: 4000 }).show();
+
+                setTimeout(() => location.reload(), 500);
+            }
+        })
+        .catch(() => {
+            ventanaPDF.close();
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerHTML = 'Confirmar Pago';
+        });
+    });
+
+});
+
+</script>
+{% endblock %}

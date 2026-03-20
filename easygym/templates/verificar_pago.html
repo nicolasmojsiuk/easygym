@@ -1,0 +1,54 @@
+{% extends "home.html" %}
+
+{% block title %}Verificación de Pago{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow-sm" style="max-width:500px;margin:auto;">
+        <div class="card-body text-center">
+
+            <h3 class="mb-4">Verificación de Comprobante</h3>
+
+            {% if pago.suscripcion.fecha_fin >= now %}
+                <div class="alert alert-success">
+                    <strong>✔ SUSCRIPCION ACTIVO</strong>
+                </div>
+            {% else %}
+                <div class="alert alert-danger">
+                    <strong>⚠ SUSCRIPCION VENCIDA</strong>
+                </div>
+            {% endif %}
+
+            <p><strong>Socio:</strong><br>
+                {{ pago.suscripcion.socio.nombre }} {{ pago.suscripcion.socio.apellido }}
+            </p>
+
+            <p><strong>DNI:</strong><br>
+                {{ pago.suscripcion.socio.dni }}
+            </p>
+
+            <p><strong>Membresía:</strong><br>
+                {{ pago.suscripcion.membresia.nombre }}
+            </p>
+
+            <p><strong>Monto pagado:</strong><br>
+                {{ pago.monto }}
+            </p>
+
+            <p><strong>Fecha de pago:</strong><br>
+                {{ pago.fecha_pago }}
+            </p>
+
+            <p><strong>Vigente hasta:</strong><br>
+                {{ pago.suscripcion.fecha_fin }}
+            </p>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
